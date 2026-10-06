@@ -2,8 +2,11 @@
 
 const BATCH_SIZE = 6;
 
-export async function fetchJson(path) {
-  const response = await fetch(path, { headers: { accept: 'application/json' } });
+export async function fetchJson(path, options) {
+  const response = await fetch(path, {
+    headers: { accept: 'application/json' },
+    ...options,
+  });
   const text = await response.text();
   let body = null;
   if (text) {
@@ -18,6 +21,28 @@ export async function fetchJson(path) {
     throw new Error(message);
   }
   return body;
+}
+
+function postJson(path, payload) {
+  return fetchJson(path, {
+    method: 'POST',
+    headers: { accept: 'application/json', 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+function patchJson(path) {
+  return fetchJson(path, {
+    method: 'PATCH',
+    headers: { accept: 'application/json' },
+  });
+}
+
+function deleteRequest(path) {
+  return fetchJson(path, {
+    method: 'DELETE',
+    headers: { accept: 'application/json' },
+  });
 }
 
 export function buildQuery(params) {
@@ -35,8 +60,48 @@ export const api = {
     return fetchJson(`/api/repos${buildQuery({ includeArchived })}`);
   },
 
+  repository(repositoryId) {
+    return fetchJson(`/api/repos/${repositoryId}`);
+  },
+
+  createClone(url, name) {
+    return postJson('/api/repos', { url, name: name || undefined });
+  },
+
+  createZip(formData) {
+    // Let the browser set the multipart boundary; only advertise accept.
+    return fetchJson('/api/repos/upload', {
+      method: 'POST',
+      headers: { accept: 'application/json' },
+      body: formData,
+    });
+  },
+
+  archive(repositoryId) {
+    return patchJson(`/api/repos/${repositoryId}/archive`);
+  },
+
+  restore(repositoryId) {
+    return patchJson(`/api/repos/${repositoryId}/restore`);
+  },
+
+  deleteRepo(repositoryId) {
+    return deleteRequest(`/api/repos/${repositoryId}`);
+  },
+
   authors(repositoryId) {
     return fetchJson(`/api/repos/${repositoryId}/authors`);
+  },
+
+  mergeAuthor(repositoryId, sourceAuthorId, targetAuthorId) {
+    return postJson(`/api/repos/${repositoryId}/author-merges`, {
+      sourceAuthorId,
+      targetAuthorId,
+    });
+  },
+
+  unmergeAuthor(repositoryId, sourceAuthorId) {
+    return deleteRequest(`/api/repos/${repositoryId}/author-merges/${sourceAuthorId}`);
   },
 
   objects(repositoryId, type) {
@@ -45,6 +110,13 @@ export const api = {
 
   metrics(repositoryId, filters) {
     return fetchJson(`/api/repos/${repositoryId}/metrics${buildQuery(filters)}`);
+  },
+
+  metricsBatch(repositoryId, scopes, filters) {
+    return postJson(`/api/repos/${repositoryId}/metrics/batch`, {
+      scopes,
+      ...filters,
+    });
   },
 
   authorMetrics(repositoryId, filters) {

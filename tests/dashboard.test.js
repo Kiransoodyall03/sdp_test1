@@ -288,6 +288,144 @@ test('GET /api/repos/:repoId/commits shows canonical author after merge', async 
 });
 
 // ---------------------------------------------------------------------------
+// Slice 8: repository detail + lifecycle (archive / restore / delete)
+// ---------------------------------------------------------------------------
+
+test('GET /api/repos/:repoId returns repository detail with counts', async () => {
+  const context = await createIngestedFixture();
+  try {
+    const { url, close } = await startServer({ database: context.db });
+    try {
+      const repoId = context.repository.id;
+      const res = await fetch(`${url}/api/repos/${repoId}`);
+      assert.strictEqual(res.status, 200);
+      const body = await res.json();
+      assert.strictEqual(body.repository.id, repoId);
+      assert.strictEqual(body.repository.name, 'Dashboard Fixture');
+      assert.strictEqual(body.repository.status, 'ready');
+      assert.strictEqual(body.repository.archivedAt, null);
+      assert.ok(body.repository.commitCount >= 5);
+      assert.ok(body.repository.authorCount >= 3);
+      assert.ok(body.repository.fileChangeCount >= 1);
+      assert.ok(body.repository.headCommit);
+    } finally {
+      await close();
+    }
+  } finally {
+    cleanFixture(context);
+  }
+});
+
+test('GET /api/repos/:repoId returns 404 for an unknown repository', async () => {
+  const context = await createIngestedFixture();
+  try {
+    const { url, close } = await startServer({ database: context.db });
+    try {
+      const res = await fetch(`${url}/api/repos/99999`);
+      assert.strictEqual(res.status, 404);
+      assert.ok((await res.json()).error.message);
+    } finally {
+      await close();
+    }
+  } finally {
+    cleanFixture(context);
+  }
+});
+
+test('PATCH archive/restore toggle archivedAt and guard repeated state changes', async () => {
+  const context = await createIngestedFixture();
+  try {
+    const { url, close } = await startServer({ database: context.db });
+    try {
+      const repoId = context.repository.id;
+
+      const archived = await fetch(`${url}/api/repos/${repoId}/archive`, { method: 'PATCH' });
+      assert.strictEqual(archived.status, 200);
+      const archivedBody = await archived.json();
+      assert.ok(archivedBody.repository.archivedAt);
+
+      // Archiving twice is a conflict.
+      const again = await fetch(`${url}/api/repos/${repoId}/archive`, { method: 'PATCH' });
+      assert.strictEqual(again.status, 409);
+
+      // Archived repositories disappear from the default list.
+      const list = await fetch(`${url}/api/repos`);
+      assert.strictEqual((await list.json()).repositories.length, 0);
+
+      const restored = await fetch(`${url}/api/repos/${repoId}/restore`, { method: 'PATCH' });
+      assert.strictEqual(restored.status, 200);
+      assert.strictEqual((await restored.json()).repository.archivedAt, null);
+
+      // Restoring a non-archived repository is a conflict.
+      const restoreAgain = await fetch(`${url}/api/repos/${repoId}/restore`, { method: 'PATCH' });
+      assert.strictEqual(restoreAgain.status, 409);
+
+      const listAfter = await fetch(`${url}/api/repos`);
+      assert.strictEqual((await listAfter.json()).repositories.length, 1);
+    } finally {
+      await close();
+    }
+  } finally {
+    cleanFixture(context);
+  }
+});
+
+test('DELETE requires archiving first, then removes rows and the stored clone', async () => {
+  const context = await createIngestedFixture();
+  try {
+    const repoId = context.repository.id;
+    const storagePath = context.db
+      .prepare('SELECT storage_path FROM repositories WHERE id = ?')
+      .get(repoId).storage_path;
+    assert.ok(storagePath && fs.existsSync(storagePath), 'fixture clone should exist on disk');
+
+    const { url, close } = await startServer({
+      database: context.db,
+      repoStoreDir: path.join(context.tempRoot, 'repos'),
+    });
+    try {
+      // Cannot delete an active (non-archived) repository.
+      const blocked = await fetch(`${url}/api/repos/${repoId}`, { method: 'DELETE' });
+      assert.strictEqual(blocked.status, 409);
+
+      await fetch(`${url}/api/repos/${repoId}/archive`, { method: 'PATCH' });
+      const deleted = await fetch(`${url}/api/repos/${repoId}`, { method: 'DELETE' });
+      assert.strictEqual(deleted.status, 204);
+
+      const detail = await fetch(`${url}/api/repos/${repoId}`);
+      assert.strictEqual(detail.status, 404);
+      const list = await fetch(`${url}/api/repos?includeArchived=true`);
+      assert.strictEqual((await list.json()).repositories.length, 0);
+      assert.strictEqual(fs.existsSync(storagePath), false, 'stored clone should be removed');
+    } finally {
+      await close();
+    }
+  } finally {
+    cleanFixture(context);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Slice 9: error handling
+// ---------------------------------------------------------------------------
+
+test('malformed JSON request bodies return a clean 400 envelope', async () => {
+  const { url, close } = await startServer();
+  try {
+    const res = await fetch(`${url}/api/repos`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{ this is not json',
+    });
+    assert.strictEqual(res.status, 400);
+    const body = await res.json();
+    assert.ok(body.error && typeof body.error.message === 'string');
+  } finally {
+    await close();
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Static asset serving
 // ---------------------------------------------------------------------------
 
@@ -303,6 +441,8 @@ test('dashboard CSS and JS assets are served', async () => {
       '/js/main.js',
       '/js/api.js',
       '/js/charts.js',
+      '/js/repos-view.js',
+      '/js/authors-view.js',
     ];
     for (const asset of assets) {
       const res = await fetch(`${url}${asset}`);

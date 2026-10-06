@@ -1,10 +1,14 @@
 import { api, fetchJson } from './api.js';
 import { renderEmptyChart, renderOwnershipChart } from './charts.js';
+import { initRepositoriesView, activateRepositoriesView } from './repos-view.js';
+import { initAuthorsView, activateAuthorsView, populateRepositories } from './authors-view.js';
 
 const OBJECT_ROW_LIMIT = 50;
 
 const elements = {
   healthBadge: document.getElementById('health-badge'),
+  tabBar: document.getElementById('tab-bar'),
+  applyFilters: document.getElementById('apply-filters'),
   filterForm: document.getElementById('filter-form'),
   filterStatus: document.getElementById('filter-status'),
   dashboardError: document.getElementById('dashboard-error'),
@@ -237,22 +241,22 @@ async function loadObjectTable(filters) {
     return;
   }
 
-  const results = await Promise.all(
-    visible.map(async (child) => {
-      try {
-        return objectRow(
-          child.label,
-          await api.metrics(state.selectedRepository.id, {
-            ...filters,
-            type: child.type,
-            path: child.path,
-          })
-        );
-      } catch {
-        return objectRow(child.label, null);
-      }
-    })
-  );
+  // One batched request replaces N parallel per-child metric calls (Slice 9).
+  const { author, from, to, commits } = filters;
+  let results;
+  try {
+    const batch = await api.metricsBatch(
+      state.selectedRepository.id,
+      visible.map((child) => ({ type: child.type, path: child.path })),
+      { author, from, to, commits }
+    );
+    results = visible.map((child, index) => {
+      const entry = batch.results[index];
+      return objectRow(child.label, entry && !entry.error ? { metrics: entry.metrics } : null);
+    });
+  } catch {
+    results = visible.map((child) => objectRow(child.label, null));
+  }
 
   if (children.length > visible.length) {
     const row = document.createElement('tr');
@@ -333,6 +337,7 @@ async function refreshDashboard() {
 
   const filters = { ...baseFilters(), ...scopeFilters() };
   setFilterStatus('Loading metrics…');
+  elements.applyFilters.disabled = true;
   try {
     const report = await api.metrics(state.selectedRepository.id, filters);
     renderSummary(report);
@@ -342,6 +347,8 @@ async function refreshDashboard() {
     clearDynamicViews();
     setError(error.message);
     setFilterStatus('Metrics unavailable.');
+  } finally {
+    elements.applyFilters.disabled = false;
   }
 }
 
@@ -362,6 +369,7 @@ function populateSelect(select, options, currentValue) {
 async function loadRepositoryOptions() {
   const data = await api.repositories();
   state.repositories = data.repositories;
+  populateRepositories(state.repositories);
   const options = state.repositories.map((repository) => ({
     value: String(repository.id),
     label: `${repository.name} (${repository.status})`,
@@ -635,6 +643,46 @@ elements.resetFilters.addEventListener('click', () => {
   updatePathField();
   updateCommitCount();
   refreshDashboard();
+});
+
+// --- Tab router -----------------------------------------------------------
+const panels = {
+  dashboard: document.getElementById('panel-dashboard'),
+  repositories: document.getElementById('panel-repositories'),
+  authors: document.getElementById('panel-authors'),
+};
+
+function switchTab(panelName) {
+  for (const tab of elements.tabBar.querySelectorAll('.tab')) {
+    const active = tab.dataset.panel === panelName;
+    tab.classList.toggle('tab--active', active);
+    tab.setAttribute('aria-selected', String(active));
+  }
+  for (const [name, panel] of Object.entries(panels)) {
+    panel.classList.toggle('hidden', name !== panelName);
+  }
+  if (panelName === 'repositories') activateRepositoriesView();
+  if (panelName === 'authors') activateAuthorsView();
+}
+
+elements.tabBar.addEventListener('click', (event) => {
+  const tab = event.target.closest('.tab');
+  if (tab) switchTab(tab.dataset.panel);
+});
+
+// --- Cross-view wiring ----------------------------------------------------
+initRepositoriesView({
+  repositoriesChanged: () => {
+    loadRepositoryOptions().catch((error) => setError(error.message));
+  },
+});
+initAuthorsView({
+  authorsChanged: () => {
+    if (state.selectedRepository) {
+      loadAuthors(state.selectedRepository.id).catch(() => {});
+    }
+    refreshDashboard().catch(setError);
+  },
 });
 
 initHealthBadge();

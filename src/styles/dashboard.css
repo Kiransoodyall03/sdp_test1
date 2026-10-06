@@ -182,10 +182,148 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Author ownership can list thousands of rows, so this variant scrolls
+   vertically within itself instead of stretching the page. The header row
+   stays pinned; an inset shadow keeps the divider visible because collapsed
+   table borders do not travel with a sticky cell. */
+.scroll-table--bounded {
+  max-height: min(420px, 55vh);
+  overflow-y: auto;
+}
+
+.scroll-table--bounded .table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  box-shadow: inset 0 -1px 0 var(--color-border);
+}
+
 .table-note {
   text-align: center;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-style: italic;
   padding: var(--space-2) var(--space-3);
+}
+
+/* Tab bar (Slice 8): underline tabs, no pills, Google-style --------------- */
+.tab-bar {
+  display: flex;
+  gap: var(--space-1);
+  padding: 0 var(--space-5);
+  border-bottom: var(--border);
+  background: var(--color-background);
+  overflow-x: auto;
+}
+
+.tab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: var(--space-3) var(--space-4);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.tab:hover {
+  color: var(--color-primary);
+  background: var(--color-surface-hover);
+}
+
+.tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Panels ----------------------------------------------------------------- */
+.panel {
+  min-width: 0;
+}
+
+.panel__inner {
+  padding: var(--space-5);
+  max-width: 1200px;
+}
+
+/* Add repository (clone + upload side by side) --------------------------- */
+.add-repo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.add-repo__form {
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.add-repo__heading {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* Repository table cells ------------------------------------------------- */
+.repo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.repo-actions .btn {
+  padding: 6px 12px;
+}
+
+.source-cell {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.checkbox-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.checkbox-inline input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+/* Author merge grid (form + active merges table) ------------------------- */
+.merge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.merge-panel {
+  padding: var(--space-4);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+@media (max-width: 800px) {
+  .panel__inner {
+    padding: var(--space-4);
+  }
 }

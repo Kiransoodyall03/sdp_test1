@@ -34,148 +34,276 @@
       </div>
     </header>
 
-    <div class="layout">
-      <aside class="sidebar" id="sidebar" aria-label="Filters">
-        <form id="filter-form" class="filter-form" novalidate>
-          <h2 class="sidebar__heading">Filters</h2>
-          <p id="filter-status" class="filter-status" role="status" aria-live="polite">Loading repositories&hellip;</p>
+    <nav class="tab-bar" id="tab-bar" role="tablist" aria-label="Views">
+      <button type="button" class="tab tab--active" role="tab" id="tab-dashboard"
+        aria-controls="panel-dashboard" aria-selected="true" data-panel="dashboard">Dashboard</button>
+      <button type="button" class="tab" role="tab" id="tab-repositories"
+        aria-controls="panel-repositories" aria-selected="false" data-panel="repositories">Repositories</button>
+      <button type="button" class="tab" role="tab" id="tab-authors"
+        aria-controls="panel-authors" aria-selected="false" data-panel="authors">Authors</button>
+    </nav>
 
-          <div class="field">
-            <label class="field__label" for="repository-select">Repository</label>
-            <select id="repository-select" class="select" required></select>
-            <span class="field__hint">Only ready repositories support metric views.</span>
-          </div>
+    <!-- ================= Dashboard panel ================= -->
+    <div class="panel" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+      <div class="layout">
+        <aside class="sidebar" id="sidebar" aria-label="Filters">
+          <form id="filter-form" class="filter-form" novalidate>
+            <h2 class="sidebar__heading">Filters</h2>
+            <p id="filter-status" class="filter-status" role="status" aria-live="polite">Loading repositories&hellip;</p>
 
-          <div class="field">
-            <label class="field__label" for="scope-select">View</label>
-            <select id="scope-select" class="select">
-              <option value="repository">Repository</option>
-              <option value="directory">Directory</option>
-              <option value="file">File</option>
-            </select>
-          </div>
-
-          <div id="path-field" class="field hidden">
-            <label class="field__label" for="path-select"><span id="path-label">Directory</span></label>
-            <select id="path-select" class="select"></select>
-            <span class="field__hint">Historical objects from selected commits' file changes.</span>
-          </div>
-
-          <div class="field">
-            <label class="field__label" for="author-select">Author</label>
-            <select id="author-select" class="select">
-              <option value="">All canonical authors</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label class="field__label" for="from-date">Committer date from (inclusive)</label>
-            <input id="from-date" class="input" type="date" />
-          </div>
-
-          <div class="field">
-            <label class="field__label" for="to-date">Committer date to (exclusive)</label>
-            <input id="to-date" class="input" type="date" />
-          </div>
-
-          <fieldset class="field">
-            <legend class="field__label">Commit set</legend>
-            <div class="radio-row">
-              <label class="radio">
-                <input type="radio" name="commit-mode" value="time" checked />
-                <span>Time filters</span>
-              </label>
-              <label class="radio">
-                <input type="radio" name="commit-mode" value="manual" />
-                <span>Manual commits</span>
-              </label>
-            </div>
-            <span class="field__hint">Manual selection replaces the date range but keeps repository, author, and path filters.</span>
-          </fieldset>
-
-          <div id="manual-fields" class="hidden">
             <div class="field">
-              <label class="field__label" for="commit-search">Search commits</label>
-              <input id="commit-search" class="input" type="search" placeholder="subject or hash" autocomplete="off" />
+              <label class="field__label" for="repository-select">Repository</label>
+              <select id="repository-select" class="select" required></select>
+              <span class="field__hint">Only ready repositories support metric views.</span>
             </div>
 
             <div class="field">
-              <span id="commit-picker-label" class="field__label">Selected commits</span>
-              <div id="commit-picker" class="commit-picker" role="group" aria-labelledby="commit-picker-label commit-search"></div>
-              <div class="commit-picker__actions">
-                <span id="commit-count" class="field__hint">0 selected</span>
-                <button id="clear-commits" type="button" class="btn btn--secondary">Clear</button>
+              <label class="field__label" for="scope-select">View</label>
+              <select id="scope-select" class="select">
+                <option value="repository">Repository</option>
+                <option value="directory">Directory</option>
+                <option value="file">File</option>
+              </select>
+            </div>
+
+            <div id="path-field" class="field hidden">
+              <label class="field__label" for="path-select"><span id="path-label">Directory</span></label>
+              <select id="path-select" class="select"></select>
+              <span class="field__hint">Historical objects from selected commits' file changes.</span>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="author-select">Author</label>
+              <select id="author-select" class="select">
+                <option value="">All canonical authors</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="from-date">Committer date from (inclusive)</label>
+              <input id="from-date" class="input" type="date" />
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="to-date">Committer date to (exclusive)</label>
+              <input id="to-date" class="input" type="date" />
+            </div>
+
+            <fieldset class="field">
+              <legend class="field__label">Commit set</legend>
+              <div class="radio-row">
+                <label class="radio">
+                  <input type="radio" name="commit-mode" value="time" checked />
+                  <span>Time filters</span>
+                </label>
+                <label class="radio">
+                  <input type="radio" name="commit-mode" value="manual" />
+                  <span>Manual commits</span>
+                </label>
+              </div>
+              <span class="field__hint">Manual selection replaces the date range but keeps repository, author, and path filters.</span>
+            </fieldset>
+
+            <div id="manual-fields" class="hidden">
+              <div class="field">
+                <label class="field__label" for="commit-search">Search commits</label>
+                <input id="commit-search" class="input" type="search" placeholder="subject or hash" autocomplete="off" />
+              </div>
+
+              <div class="field">
+                <span id="commit-picker-label" class="field__label">Selected commits</span>
+                <div id="commit-picker" class="commit-picker" role="group" aria-labelledby="commit-picker-label commit-search"></div>
+                <div class="commit-picker__actions">
+                  <span id="commit-count" class="field__hint">0 selected</span>
+                  <button id="clear-commits" type="button" class="btn btn--secondary">Clear</button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="filter-actions">
-            <button id="apply-filters" type="submit" class="btn btn--primary">Apply filters</button>
-            <button id="reset-filters" type="button" class="btn btn--secondary">Reset</button>
-          </div>
-        </form>
-      </aside>
+            <div class="filter-actions">
+              <button id="apply-filters" type="submit" class="btn btn--primary">Apply filters</button>
+              <button id="reset-filters" type="button" class="btn btn--secondary">Reset</button>
+            </div>
+          </form>
+        </aside>
 
-      <main class="main" id="main">
-        <p id="dashboard-error" class="alert alert--error hidden" role="alert"></p>
+        <main class="main" id="main">
+          <p id="dashboard-error" class="alert alert--error hidden" role="alert"></p>
+
+          <section class="card">
+            <div class="card__header">
+              <h2 class="card__title">Repository summary</h2>
+              <span id="repository-status" class="badge badge--muted">No repository</span>
+            </div>
+            <dl id="summary-list" class="metric-list">
+              <div><dt>Commits</dt><dd id="summary-commits">0</dd></div>
+              <div><dt>Added</dt><dd id="summary-added">0</dd></div>
+              <div><dt>Removed</dt><dd id="summary-removed">0</dd></div>
+              <div><dt>Growth</dt><dd id="summary-growth">0</dd></div>
+              <div><dt>Churn</dt><dd id="summary-churn">0</dd></div>
+              <div><dt>Modifications</dt><dd id="summary-modifications">0</dd></div>
+              <div><dt>Modification frequency</dt><dd id="summary-modification-frequency">0</dd></div>
+              <div><dt>Churn rate</dt><dd id="summary-churn-rate">0</dd></div>
+            </dl>
+          </section>
+
+          <section class="card">
+            <h2 class="card__title">Object metrics</h2>
+            <div class="scroll-table">
+              <table class="table" id="object-table">
+                <caption id="object-table-caption">Select a repository to view metrics.</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Object</th>
+                    <th scope="col" class="num">Added</th>
+                    <th scope="col" class="num">Removed</th>
+                    <th scope="col" class="num">Growth</th>
+                    <th scope="col" class="num">Churn</th>
+                    <th scope="col" class="num">Modifications</th>
+                  </tr>
+                </thead>
+                <tbody id="object-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="card__title">Author ownership</h2>
+            <div id="ownership-chart" class="chart chart--bars" aria-label="Author churn share"></div>
+            <div class="scroll-table scroll-table--bounded">
+              <table class="table" id="author-table">
+                <caption>Canonical authors after mailmap and manual merges.</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Author</th>
+                    <th scope="col" class="num">Commits</th>
+                    <th scope="col" class="num">Modifications</th>
+                    <th scope="col" class="num">Churn</th>
+                    <th scope="col" class="num">Ownership</th>
+                  </tr>
+                </thead>
+                <tbody id="author-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- ================= Repositories panel ================= -->
+    <div class="panel hidden" id="panel-repositories" role="tabpanel" aria-labelledby="tab-repositories">
+      <div class="panel__inner">
+        <p id="repo-error" class="alert alert--error hidden" role="alert"></p>
+
+        <section class="card">
+          <h2 class="card__title">Add repository</h2>
+          <div class="add-repo">
+            <form id="clone-form" class="add-repo__form">
+              <h3 class="add-repo__heading">Clone from URL</h3>
+              <div class="field">
+                <label class="field__label" for="clone-url">Repository URL</label>
+                <input id="clone-url" class="input" type="url" placeholder="https://github.com/owner/repo.git" required />
+              </div>
+              <div class="field">
+                <label class="field__label" for="clone-name">Name (optional)</label>
+                <input id="clone-name" class="input" type="text" placeholder="Derived from URL if blank" />
+              </div>
+              <button id="clone-submit" type="submit" class="btn btn--primary">Clone &amp; ingest</button>
+            </form>
+
+            <form id="upload-form" class="add-repo__form" enctype="multipart/form-data">
+              <h3 class="add-repo__heading">Upload a .zip</h3>
+              <div class="field">
+                <label class="field__label" for="upload-file">Zip archive (must contain a .git directory)</label>
+                <input id="upload-file" class="input" type="file" accept=".zip" required />
+              </div>
+              <div class="field">
+                <label class="field__label" for="upload-name">Name (optional)</label>
+                <input id="upload-name" class="input" type="text" placeholder="Derived from filename if blank" />
+              </div>
+              <button id="upload-submit" type="submit" class="btn btn--primary">Upload &amp; ingest</button>
+            </form>
+          </div>
+          <p id="repo-action-status" class="filter-status" role="status" aria-live="polite"></p>
+        </section>
 
         <section class="card">
           <div class="card__header">
-            <h2 class="card__title">Repository summary</h2>
-            <span id="repository-status" class="badge badge--muted">No repository</span>
+            <h2 class="card__title">Repositories</h2>
+            <label class="checkbox-inline">
+              <input type="checkbox" id="show-archived" />
+              <span>Show archived</span>
+            </label>
           </div>
-          <dl id="summary-list" class="metric-list">
-            <div><dt>Commits</dt><dd id="summary-commits">0</dd></div>
-            <div><dt>Added</dt><dd id="summary-added">0</dd></div>
-            <div><dt>Removed</dt><dd id="summary-removed">0</dd></div>
-            <div><dt>Growth</dt><dd id="summary-growth">0</dd></div>
-            <div><dt>Churn</dt><dd id="summary-churn">0</dd></div>
-            <div><dt>Modifications</dt><dd id="summary-modifications">0</dd></div>
-            <div><dt>Modification frequency</dt><dd id="summary-modification-frequency">0</dd></div>
-            <div><dt>Churn rate</dt><dd id="summary-churn-rate">0</dd></div>
-          </dl>
-        </section>
-
-        <section class="card">
-          <h2 class="card__title">Object metrics</h2>
           <div class="scroll-table">
-            <table class="table" id="object-table">
-              <caption id="object-table-caption">Select a repository to view metrics.</caption>
+            <table class="table" id="repo-table">
+              <caption>Managed repositories. Deleting requires archiving first.</caption>
               <thead>
                 <tr>
-                  <th scope="col">Object</th>
-                  <th scope="col" class="num">Added</th>
-                  <th scope="col" class="num">Removed</th>
-                  <th scope="col" class="num">Growth</th>
-                  <th scope="col" class="num">Churn</th>
-                  <th scope="col" class="num">Modifications</th>
-                </tr>
-              </thead>
-              <tbody id="object-table-body"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2 class="card__title">Author ownership</h2>
-          <div id="ownership-chart" class="chart chart--bars" aria-label="Author churn share"></div>
-          <div class="scroll-table">
-            <table class="table" id="author-table">
-              <caption>Canonical authors after mailmap and manual merges.</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Author</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Source</th>
+                  <th scope="col">Status</th>
                   <th scope="col" class="num">Commits</th>
-                  <th scope="col" class="num">Modifications</th>
-                  <th scope="col" class="num">Churn</th>
-                  <th scope="col" class="num">Ownership</th>
+                  <th scope="col" class="num">Authors</th>
+                  <th scope="col">Created</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
-              <tbody id="author-table-body"></tbody>
+              <tbody id="repo-table-body"></tbody>
             </table>
           </div>
         </section>
-      </main>
+      </div>
+    </div>
+
+    <!-- ================= Authors panel ================= -->
+    <div class="panel hidden" id="panel-authors" role="tabpanel" aria-labelledby="tab-authors">
+      <div class="panel__inner">
+        <p id="author-error" class="alert alert--error hidden" role="alert"></p>
+
+        <section class="card">
+          <div class="card__header">
+            <h2 class="card__title">Author identity merging</h2>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="merge-repo-select">Repository</label>
+            <select id="merge-repo-select" class="select"></select>
+            <span class="field__hint">Merges are per repository and never rewrite ingested commits.</span>
+          </div>
+
+          <p id="author-action-status" class="filter-status" role="status" aria-live="polite"></p>
+
+          <div class="merge-grid">
+            <form id="merge-form" class="merge-panel">
+              <h3 class="add-repo__heading">Create a merge</h3>
+              <div class="field">
+                <label class="field__label" for="merge-source">Alias (source)</label>
+                <select id="merge-source" class="select"></select>
+              </div>
+              <div class="field">
+                <label class="field__label" for="merge-target">Canonical (target)</label>
+                <select id="merge-target" class="select"></select>
+              </div>
+              <button id="merge-submit" type="submit" class="btn btn--primary">Merge alias into canonical</button>
+            </form>
+
+            <div class="scroll-table">
+              <table class="table" id="merge-table">
+                <caption>Active manual merges for the selected repository.</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Alias</th>
+                    <th scope="col">Canonical</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="merge-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
 
     <footer class="app-footer">

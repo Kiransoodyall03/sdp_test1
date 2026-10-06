@@ -75,6 +75,7 @@ function createReposRouter(options = {}) {
 
   router.get('/:repoId/commits', controller.listCommits);
   router.get('/:repoId/metrics', metricsController.get);
+  router.post('/:repoId/metrics/batch', metricsController.batch);
   router.get('/:repoId/objects', metricsController.listObjects);
   router.get('/:repoId/authors/metrics', authorsController.metrics);
   router.get('/:repoId/authors', authorsController.list);
@@ -83,6 +84,12 @@ function createReposRouter(options = {}) {
     '/:repoId/author-merges/:sourceAuthorId',
     authorsController.unmerge
   );
+
+  // Repository detail and lifecycle (archive / restore / delete).
+  router.get('/:repoId', controller.get);
+  router.patch('/:repoId/archive', controller.archive);
+  router.patch('/:repoId/restore', controller.restore);
+  router.delete('/:repoId', controller.remove);
 
   return router;
 }

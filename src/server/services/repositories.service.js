@@ -1,7 +1,9 @@
 'use strict';
 
-/** Repository listing and selectable-commit queries for the dashboard. */
+/** Repository listing, detail, lifecycle (archive/restore/delete) and commit queries. */
 
+const fs = require('fs');
+const path = require('path');
 const { MetricsInputError } = require('./metrics.service');
 
 function parsePositiveInteger(value, label) {
@@ -50,17 +52,32 @@ function publicRepository(row) {
   };
 }
 
+const REPOSITORY_COLUMNS = `r.id, r.name, r.source_type, r.source_origin, r.head_commit,
+         r.status, r.error_message, r.created_at, r.archived_at,
+         (SELECT count(*) FROM commits c WHERE c.repo_id = r.id) AS commit_count,
+         (SELECT count(*) FROM authors a WHERE a.repo_id = r.id) AS author_count,
+         (SELECT count(*) FROM file_changes fc WHERE fc.repo_id = r.id)
+           AS file_change_count`;
+
+function requireRepository(db, repoIdValue) {
+  const repoId = parsePositiveInteger(repoIdValue, 'repository id');
+  const row = db
+    .prepare(`SELECT ${REPOSITORY_COLUMNS} FROM repositories r WHERE r.id = ?`)
+    .get(repoId);
+  if (!row) throw new MetricsInputError('repository not found', 404);
+  return row;
+}
+
+function getRepository(db, repoIdValue) {
+  return publicRepository(requireRepository(db, repoIdValue));
+}
+
 function listRepositories(db, options = {}) {
   const includeArchived = options.includeArchived === true || options.includeArchived === 'true';
 
   const rows = db
     .prepare(
-      `SELECT r.id, r.name, r.source_type, r.source_origin, r.head_commit,
-              r.status, r.error_message, r.created_at, r.archived_at,
-              (SELECT count(*) FROM commits c WHERE c.repo_id = r.id) AS commit_count,
-              (SELECT count(*) FROM authors a WHERE a.repo_id = r.id) AS author_count,
-              (SELECT count(*) FROM file_changes fc WHERE fc.repo_id = r.id)
-                AS file_change_count
+      `SELECT ${REPOSITORY_COLUMNS}
        FROM repositories r
        ${includeArchived ? '' : 'WHERE r.archived_at IS NULL'}
        ORDER BY r.archived_at IS NULL DESC, lower(r.name), r.id`
@@ -71,6 +88,65 @@ function listRepositories(db, options = {}) {
     repositories: rows.map(publicRepository),
     includeArchived,
   };
+}
+
+function archiveRepository(db, repoIdValue) {
+  const row = requireRepository(db, repoIdValue);
+  if (row.archived_at) {
+    throw new MetricsInputError('repository is already archived', 409);
+  }
+  const archivedAt = new Date().toISOString();
+  db.prepare('UPDATE repositories SET archived_at = ? WHERE id = ?').run(
+    archivedAt,
+    row.id
+  );
+  return publicRepository(requireRepository(db, row.id));
+}
+
+function restoreRepository(db, repoIdValue) {
+  const row = requireRepository(db, repoIdValue);
+  if (!row.archived_at) {
+    throw new MetricsInputError('repository is not archived', 409);
+  }
+  db.prepare('UPDATE repositories SET archived_at = NULL WHERE id = ?').run(row.id);
+  return publicRepository(requireRepository(db, row.id));
+}
+
+/**
+ * Permanently delete a repository. Archiving first is required so deletion is
+ * an explicit two-step action. Rows are removed in dependency order inside a
+ * transaction, then the on-disk bare clone directory is removed.
+ */
+function deleteRepository(db, repoIdValue, repoStoreDir) {
+  const row = db
+    .prepare('SELECT id, storage_path, archived_at FROM repositories WHERE id = ?')
+    .get(parsePositiveInteger(repoIdValue, 'repository id'));
+  if (!row) throw new MetricsInputError('repository not found', 404);
+  if (!row.archived_at) {
+    throw new MetricsInputError('archive the repository before deleting it', 409);
+  }
+
+  const purge = db.transaction(() => {
+    db.prepare('DELETE FROM file_changes WHERE repo_id = ?').run(row.id);
+    db.prepare('DELETE FROM commits WHERE repo_id = ?').run(row.id);
+    db.prepare('DELETE FROM author_merges WHERE repo_id = ?').run(row.id);
+    db.prepare('DELETE FROM authors WHERE repo_id = ?').run(row.id);
+    db.prepare('DELETE FROM repositories WHERE id = ?').run(row.id);
+  });
+  purge();
+
+  // Remove the stored bare clone. storage_path is always inside repoStoreDir;
+  // guard against escaping it before recursively deleting.
+  const storagePath = row.storage_path;
+  if (storagePath && repoStoreDir) {
+    const resolved = path.resolve(storagePath);
+    const root = path.resolve(repoStoreDir);
+    if (resolved.startsWith(root + path.sep)) {
+      fs.rmSync(resolved, { recursive: true, force: true });
+    }
+  }
+
+  return { id: row.id, deleted: true };
 }
 
 function listCommits(db, repoIdValue, query = {}) {
@@ -173,5 +249,9 @@ function listCommits(db, repoIdValue, query = {}) {
 
 module.exports = {
   listRepositories,
+  getRepository,
+  archiveRepository,
+  restoreRepository,
+  deleteRepository,
   listCommits,
 };

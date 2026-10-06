@@ -397,10 +397,55 @@ function listObjects(db, repoIdValue, typeValue) {
   };
 }
 
+/**
+ * Compute metrics for many object scopes in a single request. The dashboard
+ * object table needs one report per immediate child; batching collapses N HTTP
+ * round-trips into one. Shared commit-set filters are applied to every scope.
+ * A scope that fails validation is reported inline so the rest still render.
+ */
+function getMetricsBatch(db, repoIdValue, input = {}) {
+  const repoId = parsePositiveInteger(repoIdValue, 'repository id');
+  const repository = requireReadyRepository(db, repoId);
+
+  const scopes = Array.isArray(input.scopes) ? input.scopes : null;
+  if (!scopes) {
+    throw new MetricsInputError('scopes must be an array of { type, path } objects');
+  }
+  if (scopes.length > 200) {
+    throw new MetricsInputError('at most 200 scopes may be requested in one batch');
+  }
+
+  const { scopes: _ignored, ...sharedFilters } = input;
+  const results = scopes.map((scope, index) => {
+    const descriptor = scope && typeof scope === 'object' ? scope : {};
+    try {
+      const report = getMetrics(db, repoId, {
+        ...sharedFilters,
+        type: descriptor.type,
+        path: descriptor.path,
+      });
+      return { index, scope: report.scope, metrics: report.metrics };
+    } catch (error) {
+      return {
+        index,
+        scope: { type: descriptor.type || null, path: descriptor.path || null },
+        error: error.message || 'unable to compute metrics',
+      };
+    }
+  });
+
+  return {
+    repository: { id: repository.id, name: repository.name },
+    count: results.length,
+    results,
+  };
+}
+
 module.exports = {
   MetricsInputError,
   parseMetricsFilters,
   getMetrics,
+  getMetricsBatch,
   getAuthorMetrics,
   listObjects,
 };

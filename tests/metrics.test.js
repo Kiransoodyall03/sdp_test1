@@ -14,6 +14,7 @@ const { ingestClone } = require('../src/server/services/ingestion.service');
 const {
   MetricsInputError,
   getMetrics,
+  getMetricsBatch,
   listObjects,
 } = require('../src/server/services/metrics.service');
 const { createHistoryFixture } = require('./helpers/git-fixture');
@@ -271,6 +272,128 @@ test('metrics API lists historical objects and returns useful validation errors'
       () => getMetrics(db, repository.id, { author: 999999 }),
       (error) => error instanceof MetricsInputError && error.status === 404
     );
+  } finally {
+    await server.close();
+    cleanFixture(context);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Slice 9: batch metrics (collapse N object-table requests into one call)
+// ---------------------------------------------------------------------------
+
+test('getMetricsBatch computes many scopes and reports inline errors', async () => {
+  const context = await createIngestedFixture();
+  const { db, repository } = context;
+  try {
+    const report = getMetricsBatch(db, repository.id, {
+      scopes: [
+        { type: 'directory', path: 'src' },
+        { type: 'directory', path: 'assets' },
+        { type: 'directory', path: '__definitely_missing__' },
+      ],
+    });
+    assert.strictEqual(report.count, 3);
+    assert.strictEqual(report.repository.id, repository.id);
+
+    const [src, assets, missing] = report.results;
+    assert.strictEqual(src.index, 0);
+    assert.strictEqual(src.scope.path, 'src');
+    assert.ok(src.metrics && typeof src.metrics.churn === 'number');
+    assert.ok(src.metrics.churn > 0);
+    assert.strictEqual(assets.index, 1);
+    assert.ok(assets.metrics && !assets.error);
+
+    // The bad scope must not fail the whole batch; it carries an inline error.
+    assert.strictEqual(missing.index, 2);
+    assert.ok(missing.error);
+    assert.match(missing.error, /path not found/);
+    assert.strictEqual(missing.metrics, undefined);
+  } finally {
+    cleanFixture(context);
+  }
+});
+
+test('getMetricsBatch honours shared filters across every scope', async () => {
+  const context = await createIngestedFixture();
+  const { db, fixture, repository } = context;
+  try {
+    const unfiltered = getMetricsBatch(db, repository.id, {
+      scopes: [{ type: 'directory', path: 'src' }],
+    });
+    const filtered = getMetricsBatch(db, repository.id, {
+      scopes: [{ type: 'directory', path: 'src' }],
+      commits: fixture.modifyHash,
+    });
+    assert.ok(unfiltered.results[0].metrics.churn >= filtered.results[0].metrics.churn);
+    assert.ok(filtered.results[0].metrics.churn > 0);
+  } finally {
+    cleanFixture(context);
+  }
+});
+
+test('getMetricsBatch validates its input', async () => {
+  const context = await createIngestedFixture();
+  const { db, repository } = context;
+  try {
+    assert.throws(
+      () => getMetricsBatch(db, repository.id, {}),
+      (error) => error instanceof MetricsInputError && error.status === 400
+    );
+    assert.throws(
+      () =>
+        getMetricsBatch(db, repository.id, {
+          scopes: Array.from({ length: 201 }, () => ({ type: 'repository' })),
+        }),
+      (error) => error instanceof MetricsInputError && /at most 200/.test(error.message)
+    );
+    assert.throws(
+      () => getMetricsBatch(db, 999999, { scopes: [{ type: 'repository' }] }),
+      (error) => error instanceof MetricsInputError && error.status === 404
+    );
+  } finally {
+    cleanFixture(context);
+  }
+});
+
+test('POST /api/repos/:repoId/metrics/batch returns per-scope results over HTTP', async () => {
+  const context = await createIngestedFixture();
+  const { db, repository, tempRoot } = context;
+  const server = await startServer({
+    database: db,
+    repoStoreDir: path.join(tempRoot, 'repos'),
+  });
+  try {
+    const response = await fetch(
+      `${server.url}/api/repos/${repository.id}/metrics/batch`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          scopes: [
+            { type: 'directory', path: 'src' },
+            { type: 'directory', path: '__definitely_missing__' },
+          ],
+        }),
+      }
+    );
+    assert.strictEqual(response.status, 200);
+    const body = await response.json();
+    assert.strictEqual(body.count, 2);
+    assert.ok(body.results[0].metrics);
+    assert.ok(body.results[1].error);
+
+    // Missing scopes array -> 400 with a clean error envelope.
+    const bad = await fetch(
+      `${server.url}/api/repos/${repository.id}/metrics/batch`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      }
+    );
+    assert.strictEqual(bad.status, 400);
+    assert.ok((await bad.json()).error.message);
   } finally {
     await server.close();
     cleanFixture(context);

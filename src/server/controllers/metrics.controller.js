@@ -3,7 +3,11 @@
 /** HTTP translation for metric and object-list queries. */
 
 const { getDatabase } = require('../db/connection');
-const { getMetrics, listObjects } = require('../services/metrics.service');
+const {
+  getMetrics,
+  getMetricsBatch,
+  listObjects,
+} = require('../services/metrics.service');
 
 function createMetricsController(options = {}) {
   const resolveDatabase = () => options.database || getDatabase();
@@ -15,6 +19,19 @@ function createMetricsController(options = {}) {
           resolveDatabase(),
           req.params.repoId,
           req.query
+        );
+        res.json(report);
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    batch(req, res, next) {
+      try {
+        const report = getMetricsBatch(
+          resolveDatabase(),
+          req.params.repoId,
+          req.body || {}
         );
         res.json(report);
       } catch (error) {

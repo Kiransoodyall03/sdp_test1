@@ -11,6 +11,10 @@ const { ingestClone } = require('../services/ingestion.service');
 const { ingestZip } = require('../services/zip.service');
 const {
   listRepositories,
+  getRepository,
+  archiveRepository,
+  restoreRepository,
+  deleteRepository,
   listCommits,
 } = require('../services/repositories.service');
 
@@ -30,6 +34,39 @@ function createReposController(options = {}) {
             includeArchived: req.query.includeArchived,
           })
         );
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    get(req, res, next) {
+      try {
+        res.json({ repository: getRepository(database || getDatabase(), req.params.repoId) });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    archive(req, res, next) {
+      try {
+        res.json({ repository: archiveRepository(database || getDatabase(), req.params.repoId) });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    restore(req, res, next) {
+      try {
+        res.json({ repository: restoreRepository(database || getDatabase(), req.params.repoId) });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    remove(req, res, next) {
+      try {
+        deleteRepository(database || getDatabase(), req.params.repoId, repoStoreDir);
+        res.status(204).end();
       } catch (error) {
         next(error);
       }

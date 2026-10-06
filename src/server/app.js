@@ -35,12 +35,24 @@ function createApp(options = {}) {
   // Central error handler. JSON for /api, plain text otherwise.
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
-    const status = err.status || 500;
-    const message = err.message || 'Internal server error';
+    let status = err.status || 500;
+    let message = err.message || 'Internal server error';
+
+    // Malformed JSON bodies surface as an ugly parser error; normalise them to
+    // a clean 400 so the client always receives the same envelope shape.
+    if (err.type === 'entity.parse.failed') {
+      status = 400;
+      message = 'Request body is not valid JSON';
+    } else if (err.type === 'entity.too.large') {
+      status = 413;
+      message = 'Request body is too large';
+    }
+
     // Expected client errors are returned but do not pollute server logs.
     if (config.env !== 'test' && status >= 500) {
       // eslint-disable-next-line no-console
       console.error('[RAT] error:', err);
+      message = 'Internal server error';
     }
     if (req.originalUrl.startsWith('/api')) {
       res.status(status).json({ error: { message } });
