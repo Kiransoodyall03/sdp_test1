@@ -60,6 +60,9 @@ function createReposRouter(options = {}) {
   const metricsController = createMetricsController(options);
   const authorsController = createAuthorsController(options);
 
+  // GET /api/repos?includeArchived=true
+  router.get('/', controller.list);
+
   // POST /api/repos { "url": "https://host/owner/repo.git", "name"?: "..." }
   router.post('/', controller.createFromClone);
 
@@ -70,6 +73,7 @@ function createReposRouter(options = {}) {
     controller.createFromZip
   );
 
+  router.get('/:repoId/commits', controller.listCommits);
   router.get('/:repoId/metrics', metricsController.get);
   router.get('/:repoId/objects', metricsController.listObjects);
   router.get('/:repoId/authors/metrics', authorsController.metrics);

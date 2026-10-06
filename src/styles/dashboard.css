@@ -1,0 +1,191 @@
+/* ============================================================================
+   Dashboard: filter sidebar, metric lists, scrollable tables, alerts.
+   Uses tokens from variables.css. No gradients, no pills, no inline styles.
+   ========================================================================== */
+
+/* Utility ---------------------------------------------------------------- */
+.hidden {
+  display: none !important;
+}
+
+/* Filter form ------------------------------------------------------------ */
+.filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.filter-status {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-height: 1.5em;
+}
+
+.radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.radio input[type="radio"] {
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.filter-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border);
+  margin-top: var(--space-4);
+}
+
+/* Commit picker ---------------------------------------------------------- */
+.commit-picker {
+  max-height: 260px;
+  overflow-y: auto;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  padding: var(--space-2) 0;
+}
+
+.commit-picker__heading {
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border-bottom: var(--border);
+}
+
+.commit-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.commit-option:hover {
+  background: var(--color-surface-hover);
+}
+
+.commit-option input[type="checkbox"] {
+  margin-top: 2px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.commit-option__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.commit-picker__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.commit-picker__more {
+  display: block;
+  width: calc(100% - var(--space-6));
+  margin: var(--space-2) var(--space-3) 0;
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2);
+}
+
+/* Alerts ----------------------------------------------------------------- */
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-4);
+  border: var(--border);
+}
+
+.alert--error {
+  border-color: var(--color-danger);
+  background: #fce8e6;
+  color: #5f2120;
+}
+
+.alert--warning {
+  border-color: var(--color-warning);
+  background: #fef7e0;
+  color: #5f4b20;
+}
+
+/* Card header with status badge ------------------------------------------ */
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.card__header .card__title {
+  margin: 0;
+}
+
+/* Metric summary list ---------------------------------------------------- */
+.metric-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+}
+
+.metric-list > div {
+  padding: var(--space-3);
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.metric-list dt {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  margin-bottom: var(--space-1);
+}
+
+.metric-list dd {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollable table wrapper ----------------------------------------------- */
+.scroll-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-note {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  padding: var(--space-2) var(--space-3);
+}

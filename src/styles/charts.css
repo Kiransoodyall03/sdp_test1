@@ -1,0 +1,69 @@
+/* ============================================================================
+   Charts: SVG bar chart styling for author ownership visualisation.
+   Colours from the Google palette via tokens. No gradients.
+   ========================================================================== */
+
+.chart {
+  margin-bottom: var(--space-4);
+}
+
+.chart--bars {
+  padding: var(--space-2) 0;
+}
+
+.chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 680px;
+}
+
+.chart__svg--empty {
+  max-width: 100%;
+}
+
+.chart__empty {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  fill: var(--color-text-secondary);
+}
+
+.chart__row {
+  /* Grouping element; no visual styling needed */
+}
+
+.chart__label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  fill: var(--color-text);
+  dominant-baseline: middle;
+}
+
+.chart__track {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+  stroke-width: 0.5;
+}
+
+.chart__bar {
+  transition: opacity 120ms ease;
+}
+
+.chart__bar--primary {
+  fill: var(--color-primary);
+}
+
+.chart__bar--secondary {
+  fill: #a8c7fa;
+}
+
+.chart__bar:hover {
+  opacity: 0.8;
+}
+
+.chart__value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--color-text-secondary);
+  dominant-baseline: middle;
+}

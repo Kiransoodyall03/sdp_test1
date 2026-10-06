@@ -9,6 +9,10 @@ const config = require('../../../config');
 const { getDatabase } = require('../db/connection');
 const { ingestClone } = require('../services/ingestion.service');
 const { ingestZip } = require('../services/zip.service');
+const {
+  listRepositories,
+  listCommits,
+} = require('../services/repositories.service');
 
 function createReposController(options = {}) {
   const {
@@ -19,6 +23,26 @@ function createReposController(options = {}) {
   } = options;
 
   return {
+    list(req, res, next) {
+      try {
+        res.json(
+          listRepositories(database || getDatabase(), {
+            includeArchived: req.query.includeArchived,
+          })
+        );
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    listCommits(req, res, next) {
+      try {
+        res.json(listCommits(database || getDatabase(), req.params.repoId, req.query));
+      } catch (error) {
+        next(error);
+      }
+    },
+
     async createFromClone(req, res, next) {
       try {
         const repository = await ingestClone({
