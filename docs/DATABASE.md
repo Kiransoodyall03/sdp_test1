@@ -49,7 +49,7 @@ Manual alias mappings when a repository has no sufficient `.mailmap`.
 | `target_author_id` | INTEGER NOT NULL, FK authors, cascade delete | Identity that receives the metrics. |
 | `created_at` | TEXT NOT NULL, UTC timestamp default | Creation time. |
 
-A source can have one mapping per repository and cannot map to itself. Composite foreign keys ensure both authors belong to the repository; the service layer prevents chains/cycles.
+A source can have one mapping per repository and cannot map to itself. Composite foreign keys ensure both authors belong to the repository. The service layer keeps mappings flat by preventing a source that already receives aliases or a target that is already an alias; this prevents chains and cycles. Merges are resolved at read time and never rewrite immutable commit facts.
 
 ### `commits`
 
@@ -102,7 +102,7 @@ Only `added` and `removed` atomic facts are stored. The following are calculated
 - churn rate = churn / selected commit count (or zero for an empty set)
 - author ownership = author churn / total churn (or zero when total churn is zero)
 
-Directory metrics aggregate matching descendant file paths; repository metrics are directory metrics at the root. Binary rows remain available for file listings but are excluded from line metrics.
+Directory metrics aggregate matching descendant file paths; repository metrics are directory metrics at the root. Binary rows remain available for file listings but are excluded from line metrics. Author filters and author metrics use `COALESCE(author_merges.target_author_id, commits.author_id)` to attribute each commit to its effective canonical author.
 
 ## Archiving
 

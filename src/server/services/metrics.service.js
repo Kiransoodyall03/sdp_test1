@@ -116,6 +116,14 @@ function validateFilterReferences(db, repoId, filters) {
       .prepare('SELECT 1 FROM authors WHERE id = ? AND repo_id = ?')
       .get(filters.authorId, repoId);
     if (!author) throw new MetricsInputError('author not found in repository', 404);
+
+    const merge = db
+      .prepare(
+        `SELECT target_author_id FROM author_merges
+         WHERE repo_id = ? AND source_author_id = ?`
+      )
+      .get(repoId, filters.authorId);
+    if (merge) filters.authorId = merge.target_author_id;
   }
 
   if (filters.hashes && filters.hashes.length) {
@@ -161,7 +169,7 @@ function buildSelection(repoId, filters) {
   const params = { repoId };
 
   if (filters.authorId !== null) {
-    clauses.push('c.author_id = @authorId');
+    clauses.push('COALESCE(am.target_author_id, c.author_id) = @authorId');
     params.authorId = filters.authorId;
   }
   if (filters.from !== null) {
@@ -229,6 +237,8 @@ function getMetrics(db, repoIdValue, input = {}) {
       `WITH selected_commits AS (
          SELECT c.id
          FROM commits c
+         LEFT JOIN author_merges am
+           ON am.repo_id = c.repo_id AND am.source_author_id = c.author_id
          WHERE ${selection.where}
        ), per_commit AS (
          SELECT sc.id,
@@ -261,6 +271,93 @@ function getMetrics(db, repoIdValue, input = {}) {
     },
     scope: { type: filters.scopeType, path: filters.path },
     metrics: toMetrics(row),
+  };
+}
+
+function getAuthorMetrics(db, repoIdValue, input = {}) {
+  const repoId = parsePositiveInteger(repoIdValue, 'repository id');
+  const repository = requireReadyRepository(db, repoId);
+  const filters = parseMetricsFilters(input);
+  if (filters.authorId !== null) {
+    throw new MetricsInputError('author metrics do not accept an author filter');
+  }
+  validateFilterReferences(db, repoId, filters);
+
+  const selection = buildSelection(repoId, filters);
+  const pathJoin = buildPathJoin(filters, selection.params);
+  const rows = db
+    .prepare(
+      `WITH selected_commits AS (
+         SELECT c.id, COALESCE(am.target_author_id, c.author_id) AS author_id
+         FROM commits c
+         LEFT JOIN author_merges am
+           ON am.repo_id = c.repo_id AND am.source_author_id = c.author_id
+         WHERE ${selection.where}
+       ), per_commit AS (
+         SELECT sc.id, sc.author_id,
+                COALESCE(SUM(CASE WHEN fc.is_binary = 0 THEN fc.added ELSE 0 END), 0) AS added,
+                COALESCE(SUM(CASE WHEN fc.is_binary = 0 THEN fc.removed ELSE 0 END), 0) AS removed
+         FROM selected_commits sc
+         LEFT JOIN file_changes fc
+           ON fc.commit_id = sc.id
+          AND fc.repo_id = @repoId
+          ${pathJoin}
+         GROUP BY sc.id, sc.author_id
+       ), author_totals AS (
+         SELECT author_id, count(*) AS commit_count,
+                COALESCE(SUM(added), 0) AS added,
+                COALESCE(SUM(removed), 0) AS removed,
+                COALESCE(SUM(CASE WHEN added + removed > 0 THEN 1 ELSE 0 END), 0)
+                  AS modifications
+         FROM per_commit
+         GROUP BY author_id
+       ), selection_total AS (
+         SELECT count(*) AS commit_count,
+                COALESCE(SUM(added + removed), 0) AS churn
+         FROM per_commit
+       )
+       SELECT a.id, a.name, a.email,
+              COALESCE(author_totals.commit_count, 0) AS commit_count,
+              COALESCE(author_totals.added, 0) AS added,
+              COALESCE(author_totals.removed, 0) AS removed,
+              COALESCE(author_totals.modifications, 0) AS modifications,
+              selection_total.commit_count AS selection_commit_count,
+              selection_total.churn AS total_churn
+       FROM authors a
+       LEFT JOIN author_merges merged
+         ON merged.repo_id = a.repo_id AND merged.source_author_id = a.id
+       LEFT JOIN author_totals ON author_totals.author_id = a.id
+       CROSS JOIN selection_total
+       WHERE a.repo_id = @repoId AND merged.id IS NULL
+       ORDER BY lower(a.name), lower(a.email), a.id`
+    )
+    .all(selection.params);
+
+  const totalChurn = rows.length ? Number(rows[0].total_churn) : 0;
+  return {
+    repository: { id: repository.id, name: repository.name },
+    selection: {
+      commitCount: rows.length ? Number(rows[0].selection_commit_count) : 0,
+      from: filters.from,
+      to: filters.to,
+      commits: filters.hashes,
+    },
+    scope: { type: filters.scopeType, path: filters.path },
+    totalChurn,
+    authors: rows.map((row) => {
+      const added = Number(row.added);
+      const removed = Number(row.removed);
+      const churn = added + removed;
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        commitCount: Number(row.commit_count),
+        modifications: Number(row.modifications),
+        churn,
+        ownership: totalChurn ? churn / totalChurn : 0,
+      };
+    }),
   };
 }
 
@@ -304,5 +401,6 @@ module.exports = {
   MetricsInputError,
   parseMetricsFilters,
   getMetrics,
+  getAuthorMetrics,
   listObjects,
 };

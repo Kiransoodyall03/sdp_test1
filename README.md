@@ -45,7 +45,7 @@ curl -X POST http://localhost:3000/api/repos/upload \
 curl 'http://localhost:3000/api/repos/1/metrics?type=directory&path=src'
 ```
 
-The clone and zip extraction design is documented in [`docs/INGESTION.md`](docs/INGESTION.md). Metric definitions, filters, and API responses are documented in [`docs/METRICS.md`](docs/METRICS.md).
+The clone and zip extraction design is documented in [`docs/INGESTION.md`](docs/INGESTION.md). Metric definitions, filters, and API responses are documented in [`docs/METRICS.md`](docs/METRICS.md). Manual identity merging is documented in [`docs/AUTHORS.md`](docs/AUTHORS.md).
 
 ## Project layout
 
@@ -82,7 +82,7 @@ Being built incrementally, one slice at a time.
 - [x] **Slice 3 — Ingestion: clone URL:** deep bare clone, streaming NUL-safe history parser, mailmap resolution, 50% renames, binary detection and transactional batch storage.
 - [x] **Slice 4 — Ingestion: zip upload:** bounded multipart upload, guarded extraction, nested `.git` directory/pointer discovery, and reuse of the streaming ingestion pipeline.
 - [x] **Slice 5 — Metrics engine:** read-time file, directory, repository, and commit-set metrics with intersecting author, date, path, and manual-commit filters.
-- [ ] Slice 6 — Author merging + author metrics
+- [x] **Slice 6 — Author merging + author metrics:** flat, validated manual identity mappings; merge-aware filtering; and per-author modifications, churn, and ownership.
 - [ ] Slice 7 — Dashboard: filters + metric views
 - [ ] Slice 8 — Multi-repo management + archive/restore
 - [ ] Slice 9 — Error handling, performance & QoL

@@ -13,6 +13,7 @@ const multer = require('multer');
 const config = require('../../../config');
 const { createReposController } = require('../controllers/repos.controller');
 const { createMetricsController } = require('../controllers/metrics.controller');
+const { createAuthorsController } = require('../controllers/authors.controller');
 
 function createUploadMiddleware(options) {
   const uploadTmpDir = options.uploadTmpDir || config.paths.uploadTmpDir;
@@ -57,6 +58,7 @@ function createReposRouter(options = {}) {
   const router = express.Router();
   const controller = createReposController(options);
   const metricsController = createMetricsController(options);
+  const authorsController = createAuthorsController(options);
 
   // POST /api/repos { "url": "https://host/owner/repo.git", "name"?: "..." }
   router.post('/', controller.createFromClone);
@@ -70,6 +72,13 @@ function createReposRouter(options = {}) {
 
   router.get('/:repoId/metrics', metricsController.get);
   router.get('/:repoId/objects', metricsController.listObjects);
+  router.get('/:repoId/authors/metrics', authorsController.metrics);
+  router.get('/:repoId/authors', authorsController.list);
+  router.post('/:repoId/author-merges', authorsController.merge);
+  router.delete(
+    '/:repoId/author-merges/:sourceAuthorId',
+    authorsController.unmerge
+  );
 
   return router;
 }
