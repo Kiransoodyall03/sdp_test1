@@ -14,12 +14,12 @@ Built for the COMS3011A assessment. Architecture, metric formulas and database d
 **From a clean clone**
 
 ```bash
-npm install     # install dependencies
-npm start       # start the server -> http://localhost:3000
-npm test        # run the automated tests
+PYTHON=/usr/bin/python3 npm ci  # install the exact lockfile (Ubuntu)
+npm start                       # start -> http://localhost:3000
+npm test                        # run all automated tests
 ```
 
-Or use the provided script, which installs (if needed) and starts the app:
+Or use the recommended portable script, which selects a suitable Python for native dependencies, installs the exact lockfile if needed, and starts the app:
 
 ```bash
 ./start.sh
@@ -45,17 +45,22 @@ docs/              architecture / metrics / database documentation
 Runtime dependencies (each kept minimal and justifiable):
 
 - **express** — minimal, widely-used HTTP server and router for the JSON API and static assets.
+- **better-sqlite3** — fast transactional SQLite access for bulk ingestion and indexed synchronous metric queries.
 
 Dev dependencies: none — tests use Node's built-in `node:test` runner and `node:assert`.
 
-> More dependencies (SQLite driver, upload handling) are introduced and documented here in later slices.
+> Upload-handling dependencies are introduced and documented in the zip-ingestion slice.
+
+## Database Design
+
+The authoritative schema is [`src/server/db/schema.sql`](src/server/db/schema.sql). Every table, column, constraint, relationship, index, derived metric and archive rule is documented in [`docs/DATABASE.md`](docs/DATABASE.md); the documentation matches migration version 1.
 
 ## Current status
 
 Being built incrementally, one slice at a time.
 
 - [x] **Slice 1 — Scaffold & design system:** Express server, static dashboard shell, `/api/health`, Google-palette CSS design tokens, test harness.
-- [ ] Slice 2 — Database layer (schema + migrations)
+- [x] **Slice 2 — Database layer:** committed schema, versioned migration, constraints/indexes, automatic first-run creation and isolated DB tests.
 - [ ] Slice 3 — Ingestion: clone URL
 - [ ] Slice 4 — Ingestion: zip upload
 - [ ] Slice 5 — Metrics engine (file / directory / repository / commit-set)

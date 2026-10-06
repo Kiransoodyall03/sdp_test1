@@ -6,8 +6,13 @@
 
 const config = require('../../config');
 const { createApp } = require('./app');
+const { getDatabase, closeDatabase } = require('./db/connection');
 
 function main() {
+  // Opening the connection applies committed migrations and creates the
+  // database file automatically on first run.
+  getDatabase();
+
   const app = createApp();
 
   const server = app.listen(config.port, () => {
@@ -20,7 +25,10 @@ function main() {
   const shutdown = (signal) => {
     // eslint-disable-next-line no-console
     console.log(`[RAT] ${signal} received, closing server`);
-    server.close(() => process.exit(0));
+    server.close(() => {
+      closeDatabase();
+      process.exit(0);
+    });
   };
 
   process.on('SIGINT', () => shutdown('SIGINT'));

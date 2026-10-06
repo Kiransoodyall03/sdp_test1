@@ -13,6 +13,7 @@
     "test": "node --test tests/"
   },
   "dependencies": {
+    "better-sqlite3": "^11.7.2",
     "express": "^4.19.2"
   },
   "license": "MIT"

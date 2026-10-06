@@ -23,7 +23,13 @@ echo "[RAT] Node $(node --version), npm $(npm --version), $(git --version)"
 
 if [ ! -d node_modules ]; then
   echo "[RAT] Installing dependencies..."
-  npm install
+  # Prefer Ubuntu's system Python for native addons when available. This avoids
+  # unrelated Conda/pyenv Python environments that do not provide node-gyp.
+  if [ -x /usr/bin/python3 ]; then
+    PYTHON=/usr/bin/python3 npm ci
+  else
+    npm ci
+  fi
 fi
 
 echo "[RAT] Starting server..."
