@@ -7,9 +7,15 @@
 
 const express = require('express');
 const healthRouter = require('./health.routes');
+const { createReposRouter } = require('./repos.routes');
 
-const router = express.Router();
+function createApiRouter(options = {}) {
+  const router = express.Router();
 
-router.use('/health', healthRouter);
+  router.use('/health', healthRouter);
+  router.use('/repos', createReposRouter(options));
 
-module.exports = router;
+  return router;
+}
+
+module.exports = { createApiRouter };

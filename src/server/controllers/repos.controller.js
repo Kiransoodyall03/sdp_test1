@@ -1,0 +1,39 @@
+'use strict';
+
+/**
+ * Repository HTTP controller. It translates request/response concerns only;
+ * clone validation and all ingestion business logic live in the service.
+ */
+
+const config = require('../../../config');
+const { getDatabase } = require('../db/connection');
+const { ingestClone } = require('../services/ingestion.service');
+
+function createReposController(options = {}) {
+  const {
+    database,
+    repoStoreDir = config.paths.repoStoreDir,
+    gitService,
+    gitOptions,
+  } = options;
+
+  return {
+    async createFromClone(req, res, next) {
+      try {
+        const repository = await ingestClone({
+          db: database || getDatabase(),
+          url: req.body && req.body.url,
+          name: req.body && req.body.name,
+          repoStoreDir,
+          gitService,
+          gitOptions,
+        });
+        res.status(201).json({ repository });
+      } catch (error) {
+        next(error);
+      }
+    },
+  };
+}
+
+module.exports = { createReposController };

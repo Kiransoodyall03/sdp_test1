@@ -29,6 +29,16 @@ For local development with auto-reload: `npm run dev`.
 
 **Configuration** is via environment variables — see `.env.example`. No secrets or cloud credentials are required; the SQLite database file is created automatically on first run under `data/` (git-ignored).
 
+Clone a repository through the API:
+
+```bash
+curl -X POST http://localhost:3000/api/repos \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://github.com/DaveGamble/cJSON.git","name":"cJSON"}'
+```
+
+The clone and history-extraction design is documented in [`docs/INGESTION.md`](docs/INGESTION.md).
+
 ## Project layout
 
 ```
@@ -61,7 +71,7 @@ Being built incrementally, one slice at a time.
 
 - [x] **Slice 1 — Scaffold & design system:** Express server, static dashboard shell, `/api/health`, Google-palette CSS design tokens, test harness.
 - [x] **Slice 2 — Database layer:** committed schema, versioned migration, constraints/indexes, automatic first-run creation and isolated DB tests.
-- [ ] Slice 3 — Ingestion: clone URL
+- [x] **Slice 3 — Ingestion: clone URL:** deep bare clone, streaming NUL-safe history parser, mailmap resolution, 50% renames, binary detection and transactional batch storage.
 - [ ] Slice 4 — Ingestion: zip upload
 - [ ] Slice 5 — Metrics engine (file / directory / repository / commit-set)
 - [ ] Slice 6 — Author merging + author metrics

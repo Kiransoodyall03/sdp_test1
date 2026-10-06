@@ -9,16 +9,16 @@
 
 const express = require('express');
 const config = require('../../config');
-const apiRouter = require('./routes');
+const { createApiRouter } = require('./routes');
 
-function createApp() {
+function createApp(options = {}) {
   const app = express();
 
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
 
   // JSON API
-  app.use('/api', apiRouter);
+  app.use('/api', createApiRouter(options));
 
   // Static assets. Styles live in their own folder (/src/styles) per the
   // separation rules, so they are mounted under /css; the client under /.
@@ -37,7 +37,8 @@ function createApp() {
   app.use((err, req, res, next) => {
     const status = err.status || 500;
     const message = err.message || 'Internal server error';
-    if (config.env !== 'test') {
+    // Expected client errors are returned but do not pollute server logs.
+    if (config.env !== 'test' && status >= 500) {
       // eslint-disable-next-line no-console
       console.error('[RAT] error:', err);
     }
