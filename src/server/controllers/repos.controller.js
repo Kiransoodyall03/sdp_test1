@@ -8,6 +8,7 @@
 const config = require('../../../config');
 const { getDatabase } = require('../db/connection');
 const { ingestClone } = require('../services/ingestion.service');
+const { ingestZip } = require('../services/zip.service');
 
 function createReposController(options = {}) {
   const {
@@ -24,6 +25,24 @@ function createReposController(options = {}) {
           db: database || getDatabase(),
           url: req.body && req.body.url,
           name: req.body && req.body.name,
+          repoStoreDir,
+          gitService,
+          gitOptions,
+        });
+        res.status(201).json({ repository });
+      } catch (error) {
+        next(error);
+      }
+    },
+
+    async createFromZip(req, res, next) {
+      try {
+        const repository = await ingestZip({
+          db: database || getDatabase(),
+          uploadPath: req.file && req.file.path,
+          originalName: req.file && req.file.originalname,
+          name: req.body && req.body.name,
+          uploadTmpDir: options.uploadTmpDir,
           repoStoreDir,
           gitService,
           gitOptions,

@@ -71,6 +71,10 @@ const config = {
   },
   limits: {
     maxUploadBytes: toInt(process.env.MAX_UPLOAD_MB, 200) * 1024 * 1024,
+    maxExtractedBytes:
+      toInt(process.env.MAX_EXTRACTED_MB, 1000) * 1024 * 1024,
+    maxZipEntries: toInt(process.env.MAX_ZIP_ENTRIES, 200000),
+    maxZipDepth: toInt(process.env.MAX_ZIP_DEPTH, 64),
     gitTimeoutMs: toInt(process.env.GIT_TIMEOUT_MS, 120000),
     gitRenameThreshold: process.env.GIT_RENAME_THRESHOLD || '50%',
   },

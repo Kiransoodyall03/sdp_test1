@@ -192,19 +192,25 @@ function safeErrorMessage(error) {
   return message.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').slice(0, 2000);
 }
 
-async function ingestClone(options) {
+async function ingestRepository(options) {
   const {
     db,
-    url,
-    name,
+    sourceType,
+    sourceOrigin,
+    repositoryName,
+    prepareStorage,
     repoStoreDir = config.paths.repoStoreDir,
     gitService = git,
     gitOptions = {},
   } = options;
 
   if (!db) throw new Error('A database connection is required');
-  const sourceUrl = validateCloneUrl(url);
-  const repositoryName = validateName(name, sourceUrl);
+  if (!['clone', 'zip'].includes(sourceType)) {
+    throw new Error(`Unsupported ingestion source type: ${sourceType}`);
+  }
+  if (typeof prepareStorage !== 'function') {
+    throw new Error('A storage preparation function is required');
+  }
 
   fs.mkdirSync(repoStoreDir, { recursive: true });
   const storagePath = path.join(repoStoreDir, `${crypto.randomUUID()}.git`);
@@ -212,9 +218,9 @@ async function ingestClone(options) {
     .prepare(
       `INSERT INTO repositories
         (name, source_type, source_origin, storage_path, status)
-       VALUES (?, 'clone', ?, ?, 'pending')`
+       VALUES (?, ?, ?, ?, 'pending')`
     )
-    .run(repositoryName, sourceUrl, storagePath).lastInsertRowid;
+    .run(repositoryName, sourceType, sourceOrigin, storagePath).lastInsertRowid;
 
   db.prepare(
     `UPDATE repositories SET status = 'processing', error_message = NULL
@@ -239,7 +245,7 @@ async function ingestClone(options) {
   }
 
   try {
-    await gitService.cloneBare(sourceUrl, storagePath, gitOptions);
+    await prepareStorage(storagePath);
     const headCommit = await gitService.resolveHead(storagePath, gitOptions);
 
     await gitService.streamHistory(
@@ -290,9 +296,33 @@ async function ingestClone(options) {
   }
 }
 
+async function ingestClone(options) {
+  const {
+    url,
+    name,
+    gitService = git,
+    gitOptions = {},
+  } = options;
+  const sourceUrl = validateCloneUrl(url);
+  const repositoryName = validateName(name, sourceUrl);
+
+  return ingestRepository({
+    ...options,
+    sourceType: 'clone',
+    sourceOrigin: sourceUrl,
+    repositoryName,
+    gitService,
+    gitOptions,
+    prepareStorage: (storagePath) =>
+      gitService.cloneBare(sourceUrl, storagePath, gitOptions),
+  });
+}
+
 module.exports = {
   ValidationError,
   validateCloneUrl,
   deriveRepositoryName,
+  validateName,
+  ingestRepository,
   ingestClone,
 };

@@ -37,7 +37,15 @@ curl -X POST http://localhost:3000/api/repos \
   -d '{"url":"https://github.com/DaveGamble/cJSON.git","name":"cJSON"}'
 ```
 
-The clone and history-extraction design is documented in [`docs/INGESTION.md`](docs/INGESTION.md).
+Upload a repository archive and query its metrics:
+
+```bash
+curl -X POST http://localhost:3000/api/repos/upload \
+  -F 'repository=@repository.zip' -F 'name=Uploaded repository'
+curl 'http://localhost:3000/api/repos/1/metrics?type=directory&path=src'
+```
+
+The clone and zip extraction design is documented in [`docs/INGESTION.md`](docs/INGESTION.md). Metric definitions, filters, and API responses are documented in [`docs/METRICS.md`](docs/METRICS.md).
 
 ## Project layout
 
@@ -56,10 +64,10 @@ Runtime dependencies (each kept minimal and justifiable):
 
 - **express** — minimal, widely-used HTTP server and router for the JSON API and static assets.
 - **better-sqlite3** — fast transactional SQLite access for bulk ingestion and indexed synchronous metric queries.
+- **multer** — bounded multipart parsing with temporary disk storage for repository zip uploads.
+- **adm-zip** — archive inspection and entry-by-entry extraction after RAT applies its safety checks.
 
 Dev dependencies: none — tests use Node's built-in `node:test` runner and `node:assert`.
-
-> Upload-handling dependencies are introduced and documented in the zip-ingestion slice.
 
 ## Database Design
 
@@ -72,8 +80,8 @@ Being built incrementally, one slice at a time.
 - [x] **Slice 1 — Scaffold & design system:** Express server, static dashboard shell, `/api/health`, Google-palette CSS design tokens, test harness.
 - [x] **Slice 2 — Database layer:** committed schema, versioned migration, constraints/indexes, automatic first-run creation and isolated DB tests.
 - [x] **Slice 3 — Ingestion: clone URL:** deep bare clone, streaming NUL-safe history parser, mailmap resolution, 50% renames, binary detection and transactional batch storage.
-- [ ] Slice 4 — Ingestion: zip upload
-- [ ] Slice 5 — Metrics engine (file / directory / repository / commit-set)
+- [x] **Slice 4 — Ingestion: zip upload:** bounded multipart upload, guarded extraction, nested `.git` directory/pointer discovery, and reuse of the streaming ingestion pipeline.
+- [x] **Slice 5 — Metrics engine:** read-time file, directory, repository, and commit-set metrics with intersecting author, date, path, and manual-commit filters.
 - [ ] Slice 6 — Author merging + author metrics
 - [ ] Slice 7 — Dashboard: filters + metric views
 - [ ] Slice 8 — Multi-repo management + archive/restore
