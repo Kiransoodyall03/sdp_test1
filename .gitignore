@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Runtime data: SQLite database, cloned repositories, upload temp space.
+# Auto-created on first run; never committed.
+data/
+
+# Database files (in case DATA_DIR is overridden)
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment / secrets
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

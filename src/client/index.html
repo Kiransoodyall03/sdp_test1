@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repo Analysis Tool</title>
+
+    <!-- Roboto with a system-font fallback (configured in variables.css) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Styling lives in its own folder, mounted at /css (see src/server/app.js) -->
+    <link rel="stylesheet" href="/css/variables.css" />
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="app-header">
+      <div class="app-header__brand">
+        <span class="app-header__logo" aria-hidden="true">RAT</span>
+        <h1 class="app-header__title">Repo Analysis Tool</h1>
+      </div>
+      <div class="app-header__status">
+        <span id="health-badge" class="badge badge--muted">checking&hellip;</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" id="sidebar" aria-label="Filters">
+        <h2 class="sidebar__heading">Filters</h2>
+        <p class="placeholder-note">
+          Repository, author, path and commit-range filters arrive in a later
+          slice.
+        </p>
+      </aside>
+
+      <main class="main" id="main">
+        <section class="card">
+          <h2 class="card__title">Dashboard</h2>
+          <p class="card__text">
+            This is the application shell. Metric views (file, directory,
+            repository, commit-set and author) will render here once repository
+            ingestion and the metrics engine are wired up.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <footer class="app-footer">
+      <span>COMS3011A &mdash; Repo Analysis Tool</span>
+    </footer>
+
+    <script src="/js/main.js"></script>
+  </body>
+</html>

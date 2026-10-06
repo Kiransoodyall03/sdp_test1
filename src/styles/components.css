@@ -1,0 +1,160 @@
+/* ============================================================================
+   Components: cards, buttons, form fields, tables, badges.
+   Buttons/inputs are slightly rounded (4-6px) only - never pill or circular.
+   ========================================================================== */
+
+/* Cards ------------------------------------------------------------------ */
+.card {
+  margin-bottom: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
+}
+.card__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+.card__text {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Buttons ---------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.btn--primary:hover {
+  background: var(--color-primary-hover);
+}
+.btn--secondary {
+  background: var(--color-background);
+  color: var(--color-primary);
+  border-color: var(--color-border);
+}
+.btn--secondary:hover {
+  background: var(--color-surface-hover);
+}
+.btn--danger {
+  background: var(--color-danger);
+  color: var(--color-on-primary);
+}
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Form fields (labels are required for accessibility) -------------------- */
+.field {
+  margin-bottom: var(--space-4);
+}
+.field__label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+.field__hint {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+}
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--color-primary);
+}
+
+/* Tables ----------------------------------------------------------------- */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+.table th,
+.table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border);
+  text-align: left;
+}
+.table th {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+.table td.num,
+.table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badges (status dot uses the palette; text stays high-contrast) --------- */
+.badge {
+  --dot: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 3px 8px;
+  border: var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+.badge::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--dot);
+}
+.badge--muted {
+  --dot: var(--color-text-secondary);
+}
+.badge--success {
+  --dot: var(--color-success);
+}
+.badge--error {
+  --dot: var(--color-danger);
+}
+.badge--warning {
+  --dot: var(--color-warning);
+}
+
+/* Misc ------------------------------------------------------------------- */
+.placeholder-note {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
